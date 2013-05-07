@@ -12,6 +12,10 @@ Bitcoin selling
 * send it to the customer
 
 In both cases we need the be able to request pricing info.
+
+TODO: error handling with useful values
+TODO: add jsonascii for non-ascii chars in the description of get_new_address
+TODO: unit tests
 """
 import time
 import urllib
@@ -72,88 +76,64 @@ class MtGoxAccess(object):
         # Retrieve info
         result = json.load(urllib2.urlopen(request))
         if result['result'] == 'success':
-            return result['return']
+            return result
         else:
             raise ValueError(result['error'])
+
+
+class Account(object):
+    """New address with IPN URL callback """
+    def __init__(self, mtgox_access):
+        """Trade on MtGox """
+        self.mtgox = mtgox_access
+
+    def send_btc(self, address, amount, fee=Decimal('0.0005')):
+        """Send the given amount to the given address 
+        address
+        amount as Decimal
+        fee as Decimal
+        (no_instant, green)
+        Note: You are not able to perform this method if you have enabled 
+        Two-Factor authentication for withdrawals.
+        
+        We default to no_instant, not green with a fee of 0.0005.
+        
+        Returns the BTC transaction ID on success
+        """
+        path = "money/bitcoin/send_simple"
+        data = {
+            'address': address,
+            # Convert Decimal amount to int
+            'amount_int': decimal2satoshi(amount),
+            'fee_int': decimal2satoshi(fee),
+            'no_instant': True,
+            'green': False,
+        }
+        return self.mtgox.call(path, data)[u'data'][u'trx']
+    
+    def get_new_address(self, description='', ipn_url=None):
+        """Request a new btc_address 
+        
+        Description should be unique for a new address to be created.
+        
+        Returns the new address on success.
+        """
+        path = "money/bitcoin/address"
+        data = {'description': description}
+        if ipn_url:
+            data['ipn'] = ipn_url
+        result = self.mtgox.call(path, data)
+        return result['data']['addr']
+
 
 class Trade(object):
     """ """
     def __init__(self, mtgox_access):
         """Trade on MtGox """
         self.mtgox = mtgox_access
-    
-    def _request(self, path, data):
-        try:
-            return self.mtgox.call(path, data)
-        except Exception, msg:
-            print msg
-
-    def send_btc(self, address, amount):
-        """Send the given amount to the given address 
-        address
-        amount as Decimal
-        (fee_int, no_instant, green)
-        Note: You are not able to perform this method if you have enabled 
-        Two-Factor authentication for withdrawals.
-        
-        We default to no_instant, not green with a fee of 0.0005.
-        """
-        path = "money/bitcoin/send_simple"
-        # Convert Decimal amount to int
-        data = {
-            'address': address,
-            'amount_int': decimal2satoshi(amount),
-            'fee_int': decimal2satoshi(Decimal('0.0000')),
-            'no_instant': False,
-            'green': False,
-        }
-        print data
-        return self._request(path, data)
 
     def add(self, todo):
         """Place order """
-
-class MtGoxIPN(object):
-    """Like WalletBit """
-    url_api = "https://mtgox.com/api/1"
-    
-    def __init__(self, key, secret):
-        self._key = key
-        self._secret = secret
-    
-    def _get_signature(self, data):
-        h = hmac.new(base64.b64decode(self._secret), data, sha512)
-        return base64.b64encode(str(h.digest()))
-    
-    def _request_json(self, url, data):
-        """ """
-        if data is None:
-            data = {'nonce' : time.time()}
-        else:
-            data.update({'nonce' : time.time()})
-        # Encode
-        data = urllib.urlencode(data)
-        request = urllib2.Request(url, data)
-        # Sign
-        request.add_header("User-Agent", "Bitbank Client v0.1")
-        request.add_header('Rest-Key', self._key)
-        request.add_header('Rest-Sign', self._get_signature(data))
-        # Retrieve info
-        result = json.load(urllib2.urlopen(request))
-        if result['result'] == 'success':
-            return result['return']
-        else:
-            raise ValueError(result['error'])
-
-    def get_new_address(self, description, ipn_url):
-        """Request a new btc_address 
-        Description should be unique for a new address to be created.
-        """
-        call = "/generic/bitcoin/address"
-        data = {'description': description, 'ipn': ipn_url}
-        result = self._request_json(MtGoxIPN.url_api+call, data)
-        return result['addr']
-    
 
 if __name__ == "__main__":
     import doctest
