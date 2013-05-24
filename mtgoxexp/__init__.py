@@ -64,10 +64,11 @@ class MtGoxAccess(object):
     def call(self, path, data):
         """ """
         url = MtGoxAccess.url_api + path
+        nonce = long(100*time.time())  # max 100 requests per second
         if data is None:
-            data = {'nonce' : time.time()}
+            data = {'nonce' : nonce}
         else:
-            data.update({'nonce' : time.time()})
+            data.update({'nonce' : nonce})
         # Encode
         data = urllib.urlencode(data)
         request = urllib2.Request(url, data)
@@ -171,8 +172,14 @@ class Trade(object):
     def __init__(self, mtgox_access):
         """Trade on MtGox """
         self.mtgox = mtgox_access
+    
+    def orders(self):
+        """View open orders """
 
     def add(self, todo):
+        """Place order """
+
+    def cancel(self, todo):
         """Place order """
 
 if __name__ == "__main__":
