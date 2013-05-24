@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """\
 Send a very small amount of BTC to yourself
 """

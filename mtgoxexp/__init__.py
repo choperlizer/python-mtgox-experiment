@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """\
 2013-05-07 R.R. Nederhoed
 
