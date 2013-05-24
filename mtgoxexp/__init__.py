@@ -27,6 +27,7 @@ import hmac
 from hashlib import sha512
 import base64
 
+from decorators import cached_property
 
 def satoshi2decimal(satoshis):
     """Convert an integer Bitcoin amount to decimal
@@ -86,6 +87,35 @@ class Account(object):
     def __init__(self, mtgox_access):
         """Trade on MtGox """
         self.mtgox = mtgox_access
+    
+    @cached_property(ttl=5)
+    def info(self):
+        """Get info on the current account 
+        
+        This data will be cached for 5 seconds
+        """
+        path = "money/info"
+        data = {}
+        # TODO: Error handling???
+        return self.mtgox.call(path, data)['data']
+    
+    def balance(self, currency='BTC'):
+        """Amount in account 
+        
+        This data will be cached for 5 seconds
+        """
+        data = self.info[u'Wallets'][currency][u'Balance']
+        return Decimal(data['value'])
+    
+    def available(self, currency='BTC'):
+        """Amount available for withdrawal
+        
+        This data will be cached for 5 seconds
+        """
+        data = self.info[u'Wallets'][currency]
+        balance = Decimal(data[u'Balance'][u'value'])
+        limit = Decimal(data[u'Max_Withdraw'][u'value'])
+        return min(balance, limit)
 
     def send_btc(self, address, amount, fee=Decimal('0.0005')):
         """Send the given amount to the given address 
