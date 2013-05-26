@@ -34,7 +34,7 @@ orders = api.orders(market)
 print len(orders), "open orders"
 
 if not orders:
-    order_id = api.add(market, 'bid', Decimal('1000'), Decimal('10'))
+    order_id = api.add(market, 'ask', Decimal('0.1'), Decimal('120'))
     print "added:", order_id
 
 orders = api.orders(market)
