@@ -31,11 +31,16 @@ market = 'BTCEUR'
 
 # Open Orders
 orders = api.orders(market)
-pp.pprint(orders)
+print len(orders), "open orders"
 
 if not orders:
-    print api.add(market, 'bid', Decimal('0.01'), Decimal('10'))
+    order_id = api.add(market, 'bid', Decimal('1000'), Decimal('10'))
+    print "added:", order_id
 
 orders = api.orders(market)
 pp.pprint(orders)
 
+for order in orders:
+    order_id = order['oid']
+    api.cancel(market, order_id)
+    print "cancelled:", order_id

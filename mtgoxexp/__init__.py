@@ -205,8 +205,14 @@ class Trade(object):
         result = self.mtgox.call(path, data)
         return result['data']
 
-    def cancel(self, todo):
-        """Place order """
+    def cancel(self, market, order_id):
+        """Cancel order """
+        path = "%s/money/order/cancel" % market
+        data = {
+            'oid': order_id,
+        }
+        result = self.mtgox.call(path, data)
+        return result['data']
 
 if __name__ == "__main__":
     import doctest
