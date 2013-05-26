@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """\
-View MtGox account info
+Add an order
+View all open orders
+cancel the order
 """
 from decimal import Decimal
 
@@ -9,7 +11,7 @@ import time
 import random
 
 from mtgoxexp import MtGoxAccess
-from mtgoxexp import Account
+from mtgoxexp import Trade
 
 random.seed(time.time())
 
@@ -18,17 +20,22 @@ MTGOX_KEY = file(os.path.join(dirname, 'mtgox-key.secret')).read().strip()
 MTGOX_SECRET = file(os.path.join(dirname, 'mtgox-secret.secret')).read().strip()
 
 auth = MtGoxAccess(MTGOX_KEY, MTGOX_SECRET)
-api = Account(auth)
+api = Trade(auth)
 
 from pprint import PrettyPrinter
 
 pp = PrettyPrinter(indent=2)
 
-# get account info
-#pp.pprint(api.info())
+# TRADE!
+market = 'BTCEUR'
 
-# Balance
-for currency in ('BTC', 'EUR'):
-    print currency
-    print 'balance:   ', api.balance(currency)
-    print 'available: ', api.available(currency)
+# Open Orders
+orders = api.orders(market)
+pp.pprint(orders)
+
+if not orders:
+    print api.add(market, 'bid', Decimal('0.01'), Decimal('10'))
+
+orders = api.orders(market)
+pp.pprint(orders)
+

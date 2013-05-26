@@ -173,11 +173,37 @@ class Trade(object):
         """Trade on MtGox """
         self.mtgox = mtgox_access
     
-    def orders(self):
-        """View open orders """
+    def orders(self, market):
+        """View open orders 
+        parameters:
+        
+        """
+        path = "%s/money/orders" % market
+        data = {}
+        result = self.mtgox.call(path, data)
+        return result['data']
 
-    def add(self, todo):
-        """Place order """
+    def add(self, market, type_,amount, price=None):
+        """Place order 
+        To buy 0.5 BTC for max 60 euro per BTC, call:
+        api.add('BTCEUR', 'bid', Decimal('0.5'), Decimal('60'))
+        To sell 500 BTC for market price, call:
+        api.add('BTCEUR', 'ask', Decimal('500'))
+        """
+        path = "%s/money/order/add" % market
+        assert type_ in ('bid', 'ask')
+        assert isinstance(amount, Decimal)
+        # Convert amount Decimal to int
+        data = {
+            'type': type_,
+            'amount_int': decimal2satoshi(amount),
+        }
+        # On price, convert to int
+        if price is not None:
+            assert isinstance(price, Decimal)
+            data['price_int'] = long(price*100000)
+        result = self.mtgox.call(path, data)
+        return result['data']
 
     def cancel(self, todo):
         """Place order """
