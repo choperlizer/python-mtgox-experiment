@@ -64,7 +64,7 @@ class MtGoxAccess(object):
     def call(self, path, data):
         """ """
         url = MtGoxAccess.url_api + path
-        nonce = long(100*time.time())  # max 100 requests per second
+        nonce = long(1000*time.time())  # max 1000 requests per second
         if data is None:
             data = {'nonce' : nonce}
         else:

@@ -9,6 +9,7 @@ from decimal import Decimal
 import os
 import time
 import random
+import urllib2
 
 from mtgoxexp import MtGoxAccess
 from mtgoxexp import Trade
@@ -34,8 +35,11 @@ orders = api.orders(market)
 print len(orders), "open orders"
 
 if not orders:
-    order_id = api.add(market, 'ask', Decimal('0.1'), Decimal('120'))
-    print "added:", order_id
+    try:
+        order_id = api.add(market, 'bid', Decimal('0.01'), Decimal('120'))
+        print "added:", order_id
+    except urllib2.HTTPError, error:
+        print error.read()
 
 orders = api.orders(market)
 pp.pprint(orders)

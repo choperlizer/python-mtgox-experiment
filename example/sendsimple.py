@@ -28,8 +28,9 @@ print "New address for payment of %s: " % description, address
 tx = api.send_btc(address, Decimal('0.001'), Decimal('0.0'))
 print "0.001 BTC sent to %s, txid: %s" % (address, tx)
 # Send amount, larger than available
+print "Try to send a too large amount"
 try:
-    tx = api.send_btc(address, Decimal('1000'), Decimal('0.001'))
+    tx = api.send_btc(address, Decimal('100000'), Decimal('0.001'))
 except Exception, msg:
     print msg
     print msg.read()
