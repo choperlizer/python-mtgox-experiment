@@ -61,21 +61,25 @@ class MtGoxAccess(object):
         h = hmac.new(base64.b64decode(self._secret), hash_data, sha512)
         return base64.b64encode(str(h.digest()))
     
-    def call(self, path, data):
+    def call(self, path, data, auth=True):
         """ """
         url = MtGoxAccess.url_api + path
-        nonce = long(1000*time.time())  # max 1000 requests per second
-        if data is None:
-            data = {'nonce' : nonce}
-        else:
-            data.update({'nonce' : nonce})
+        if auth:
+            nonce = long(1000*time.time())  # max 1000 requests per second
+            if data is None:
+                data = {'nonce' : nonce}
+            else:
+                data.update({'nonce' : nonce})
+        elif data is None:
+            data = {}
         # Encode
         data = urllib.urlencode(data)
         request = urllib2.Request(url, data)
-        # Sign
-        request.add_header("User-Agent", self._client)
-        request.add_header('Rest-Key', self._key)
-        request.add_header('Rest-Sign', self._get_signature(path, data))
+        if auth:
+            # Sign
+            request.add_header("User-Agent", self._client)
+            request.add_header('Rest-Key', self._key)
+            request.add_header('Rest-Sign', self._get_signature(path, data))
         # Retrieve info
         result = json.load(urllib2.urlopen(request))
         if result['result'] == 'success':
@@ -183,7 +187,26 @@ class Trade(object):
         result = self.mtgox.call(path, data)
         return result['data']
 
-    def add(self, market, type_,amount, price=None):
+    def ticker(self, market):
+        """Ticker information
+        """
+        path = '%s/money/ticker' % (market,)
+        return self.mtgox.call(path, None, False)['data']
+
+    def ticker_fast(self, market):
+        path = '%s/money/ticker_fast' % (market,)
+        return self.mtgox.call(path, None, False)['data']
+
+    def quote(self, market, type_, amount):
+        assert type_ in ('bid', 'ask')
+        assert isinstance(amount, Decimal) and amount > 0
+        path = '%s/money/order/quote' % (market,)
+        return self.mtgox.call(
+            path,
+            {'amount': decimal2satoshi(amount),
+                'type': type_,})['data']
+
+    def add(self, market, type_, amount, price=None):
         """Place order 
         To buy 0.5 BTC for max 60 euro per BTC, call:
         api.add('BTCEUR', 'bid', Decimal('0.5'), Decimal('60'))
@@ -192,7 +215,7 @@ class Trade(object):
         """
         path = "%s/money/order/add" % market
         assert type_ in ('bid', 'ask')
-        assert isinstance(amount, Decimal)
+        assert isinstance(amount, Decimal) and amount > 0
         # Convert amount Decimal to int
         data = {
             'type': type_,
@@ -200,7 +223,9 @@ class Trade(object):
         }
         # On price, convert to int
         if price is not None:
-            assert isinstance(price, Decimal)
+            # XXX this is too simple, as the divisor/multiplier depends on
+            # the currency! (1e5 for most, but 1e3 for Yen and SK)
+            assert isinstance(price, Decimal) and price > 0
             data['price_int'] = long(price*100000)
         result = self.mtgox.call(path, data)
         return result['data']
@@ -210,6 +235,16 @@ class Trade(object):
         path = "%s/money/order/cancel" % market
         data = {
             'oid': order_id,
+        }
+        result = self.mtgox.call(path, data)
+        return result['data']
+
+    def result(self, market, type_, orderid):
+        assert type_ in ('bid', 'ask')
+        path = '%s/money/order/result' % (market,)
+        data = {
+            'type': type_,
+            'oid': orderid,
         }
         result = self.mtgox.call(path, data)
         return result['data']
