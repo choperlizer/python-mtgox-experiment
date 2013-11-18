@@ -73,7 +73,7 @@ class MtGoxAccess(object):
         elif data is None:
             data = {}
         # Encode
-        data = urllib.urlencode(data)
+        data = urllib.urlencode(data) or None
         request = urllib2.Request(url, data)
         if auth:
             # Sign
