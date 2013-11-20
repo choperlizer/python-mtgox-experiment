@@ -244,7 +244,7 @@ class Trade(object):
         path = '%s/money/order/result' % (market,)
         data = {
             'type': type_,
-            'oid': orderid,
+            'order': orderid,
         }
         result = self.mtgox.call(path, data)
         return result['data']
